@@ -34,11 +34,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(especificacaoSwagger, {
 }));
 
 app.get('/', (req, res) => {
-  res.json({
-    mensagem: 'VittaCash API',
-    versao: '1.0.0',
-    docs: `${req.protocol}://${req.get('host')}/api-docs`,
-  });
+  res.redirect('/api-docs');
 });
 
 app.get('/health', (req, res) => {
@@ -66,7 +62,7 @@ app.listen(PORTA, () => {
   console.log('='.repeat(50));
   console.log(`🚀 Servidor VittaCash rodando!`);
   console.log(`📊 Ambiente: ${process.env.NODE_ENV}`);
-  console.log(`🌐 URL: http://localhost:${PORTA}`);
+  console.log(`🌐 URL: http://localhost:${PORTA} (redireciona para /api-docs)`);
   console.log(`📚 Documentação: http://localhost:${PORTA}/api-docs`);
   console.log(`🎯 Frontend: ${process.env.FRONTEND_URL}`);
   console.log('='.repeat(50));

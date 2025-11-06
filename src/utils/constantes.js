@@ -1,5 +1,3 @@
-// Constantes da aplicação
-
 export const CATEGORIAS = [
   'Alimentação',
   'Transporte',
