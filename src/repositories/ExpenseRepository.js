@@ -2,24 +2,25 @@ import prisma from '../config/bancoDados.js';
 
 class ExpenseRepository {
   async buscarTodas(filtros = {}) {
-    const { idUsuario, mes, ano, de, ate, categoria } = filtros;
+    const { idUsuario, month, year, category } = filtros;
     const onde = {};
 
     if (idUsuario) onde.userId = idUsuario;
 
-    if (mes && ano) {
-      const mesNum = parseInt(mes, 10);
-      const anoNum = parseInt(ano, 10);
+    if (month && year) {
+      const mesNum = parseInt(month, 10);
+      const anoNum = parseInt(year, 10);
       const dataInicio = new Date(anoNum, mesNum - 1, 1);
       const dataFim = new Date(anoNum, mesNum, 0, 23, 59, 59);
       onde.date = { gte: dataInicio, lte: dataFim };
-    } else if (de || ate) {
-      onde.date = {};
-      if (de) onde.date.gte = new Date(de);
-      if (ate) onde.date.lte = new Date(ate);
+    } else if (year) {
+      const anoNum = parseInt(year, 10);
+      const dataInicio = new Date(anoNum, 0, 1);
+      const dataFim = new Date(anoNum, 11, 31, 23, 59, 59);
+      onde.date = { gte: dataInicio, lte: dataFim };
     }
 
-    if (categoria) onde.category = categoria;
+    if (category) onde.category = category;
 
     return await prisma.expense.findMany({
       where: onde,

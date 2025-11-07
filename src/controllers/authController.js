@@ -6,7 +6,7 @@ class AuthController {
       const { tokenGoogle } = req.body;
 
       if (!tokenGoogle) {
-        return res.status(400).json({ erro: 'Token do Google obrigatório' });
+        return res.status(400).json({ error: 'Token do Google obrigatório' });
       }
 
       const resultado = await authService.loginGoogle(tokenGoogle);

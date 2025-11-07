@@ -1,24 +1,16 @@
 export class ExpenseResponseDTO {
   constructor(despesa) {
     this.id = despesa.id;
-    this.titulo = despesa.title;
+    this.descricao = despesa.title;
     this.valor = despesa.amount;
-    this.data = despesa.date;
     this.categoria = despesa.category;
+    this.data = despesa.date instanceof Date
+      ? despesa.date.toISOString().split('T')[0]
+      : despesa.date;
     this.recorrente = despesa.recurring;
-    this.tipoRecorrencia = despesa.recurrenceType;
-    this.notas = despesa.notes;
-    this.idUsuario = despesa.userId;
-    this.criadoEm = despesa.createdAt;
-    this.atualizadoEm = despesa.updatedAt;
-
-    if (despesa.user) {
-      this.usuario = {
-        id: despesa.user.id,
-        nome: despesa.user.name,
-        email: despesa.user.email,
-      };
-    }
+    this.userId = despesa.userId;
+    this.createdAt = despesa.createdAt;
+    this.updatedAt = despesa.updatedAt;
   }
 
   static deArray(despesas) {

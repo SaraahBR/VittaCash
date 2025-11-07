@@ -3,9 +3,9 @@ import expenseService from '../services/expenseService.js';
 class ExpenseController {
   async listar(req, res, next) {
     try {
-      const { mes, ano, de, ate, categoria } = req.query;
+      const { month, year, category } = req.query;
       const despesas = await expenseService.listarDespesas(req.idUsuario, {
-        mes, ano, de, ate, categoria,
+        month, year, category,
       });
       res.json(despesas);
     } catch (erro) {
@@ -55,20 +55,23 @@ class ExpenseController {
 
   async relatorio(req, res, next) {
     try {
-      const { tipo, ano, mes } = req.query;
+      const { type, year, month } = req.query;
 
-      if (!tipo || !ano) {
-        return res.status(400).json({ erro: 'Parâmetros "tipo" e "ano" obrigatórios' });
+      if (!type || !year) {
+        return res.status(400).json({ error: 'Parâmetros "type" e "year" obrigatórios' });
       }
 
       let relatorio;
 
-      if (tipo === 'mensal') {
-        relatorio = await expenseService.relatorioMensal(req.idUsuario, ano, mes);
-      } else if (tipo === 'anual') {
-        relatorio = await expenseService.relatorioAnual(req.idUsuario, ano);
+      if (type === 'monthly') {
+        if (!month) {
+          return res.status(400).json({ error: 'Parâmetro "month" obrigatório para relatório mensal' });
+        }
+        relatorio = await expenseService.relatorioMensal(req.idUsuario, year, month);
+      } else if (type === 'yearly') {
+        relatorio = await expenseService.relatorioAnual(req.idUsuario, year);
       } else {
-        return res.status(400).json({ erro: 'Tipo inválido (use "mensal" ou "anual")' });
+        return res.status(400).json({ error: 'Tipo inválido (use "monthly" ou "yearly")' });
       }
 
       res.json(relatorio);
@@ -79,16 +82,29 @@ class ExpenseController {
 
   async exportar(req, res, next) {
     try {
-      const { mes, ano } = req.query;
-      const csv = await expenseService.exportarCSV(req.idUsuario, { mes, ano });
+      const { month, year, category } = req.query;
+      const csv = await expenseService.exportarCSV(req.idUsuario, { month, year, category });
 
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="despesas-${ano || 'todas'}-${mes || 'todos'}.csv"`
+        `attachment; filename="despesas-${year || 'todas'}-${month || 'todos'}.csv"`
       );
 
       res.send('\uFEFF' + csv);
+    } catch (erro) {
+      next(erro);
+    }
+  }
+
+  async importar(req, res, next) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'Arquivo CSV não enviado' });
+      }
+
+      const resultado = await expenseService.importarCSV(req.idUsuario, req.file.buffer.toString('utf-8'));
+      res.json(resultado);
     } catch (erro) {
       next(erro);
     }

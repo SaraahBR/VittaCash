@@ -70,17 +70,17 @@ class ExpenseService {
   async deletarDespesa(id, idUsuario) {
     await this.obterDespesa(id, idUsuario);
     await expenseRepository.deletar(id);
-    return { mensagem: 'Despesa removida com sucesso' };
+    return { message: 'Despesa excluída com sucesso' };
   }
 
   async relatorioMensal(idUsuario, ano, mes) {
     const anoNum = parseInt(ano, 10);
-    const mesNum = mes ? parseInt(mes, 10) : new Date().getMonth() + 1;
+    const mesNum = parseInt(mes, 10);
 
     const despesas = await expenseRepository.buscarTodas({
       idUsuario,
-      mes: mesNum,
-      ano: anoNum,
+      month: mesNum,
+      year: anoNum,
     });
 
     const porCategoria = {};
@@ -101,20 +101,17 @@ class ExpenseService {
       ano: anoNum,
       mes: mesNum,
       totalGeral,
-      porCategoria: Object.values(porCategoria),
       totalDespesas: despesas.length,
+      porCategoria: Object.values(porCategoria),
     };
   }
 
   async relatorioAnual(idUsuario, ano) {
     const anoNum = parseInt(ano, 10);
-    const dataInicio = new Date(anoNum, 0, 1);
-    const dataFim = new Date(anoNum, 11, 31, 23, 59, 59);
 
     const despesas = await expenseRepository.buscarTodas({
       idUsuario,
-      de: dataInicio,
-      ate: dataFim,
+      year: anoNum,
     });
 
     const porMes = Array.from({ length: 12 }, (_, i) => ({
@@ -136,8 +133,8 @@ class ExpenseService {
       tipo: 'anual',
       ano: anoNum,
       totalGeral,
-      porMes,
       totalDespesas: despesas.length,
+      porMes,
     };
   }
 
@@ -145,25 +142,63 @@ class ExpenseService {
     const despesas = await this.listarDespesas(idUsuario, filtros);
 
     const csvLinhas = [
-      'ID,Título,Valor,Data,Categoria,Recorrente,Tipo Recorrência,Notas',
+      'descricao,valor,categoria,data,recorrente',
     ];
 
     despesas.forEach((despesa) => {
       const linha = [
-        despesa.id,
-        `"${despesa.titulo.replace(/"/g, '""')}"`,
+        `"${despesa.descricao.replace(/"/g, '""')}"`,
         despesa.valor,
-        despesa.data.toISOString().split('T')[0],
         `"${despesa.categoria}"`,
-        despesa.recorrente ? 'Sim' : 'Não',
-        despesa.tipoRecorrencia,
-        despesa.notas ? `"${despesa.notas.replace(/"/g, '""')}"` : '',
+        despesa.data,
+        despesa.recorrente ? 'true' : 'false',
       ].join(',');
 
       csvLinhas.push(linha);
     });
 
     return csvLinhas.join('\n');
+  }
+
+  async importarCSV(idUsuario, conteudoCSV) {
+    const linhas = conteudoCSV.split('\n').filter(l => l.trim());
+    const header = linhas[0];
+
+    // Validar header
+    if (!header.includes('descricao') || !header.includes('valor')) {
+      throw new ErroValidacao('Formato CSV inválido. Campos esperados: descricao,valor,categoria,data,recorrente');
+    }
+
+    const despesasImportadas = [];
+    const erros = [];
+
+    for (let i = 1; i < linhas.length; i++) {
+      try {
+        const valores = linhas[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+
+        const despesaData = {
+          descricao: valores[0],
+          valor: parseFloat(valores[1]),
+          categoria: valores[2],
+          data: valores[3],
+          recorrente: valores[4] === 'true',
+        };
+
+        const despesa = await this.criarDespesa(idUsuario, despesaData);
+        despesasImportadas.push(despesa);
+      } catch (erro) {
+        erros.push({
+          linha: i + 1,
+          erro: erro.message || 'Erro ao processar linha',
+        });
+      }
+    }
+
+    return {
+      message: `${despesasImportadas.length} despesa(s) importada(s)${erros.length > 0 ? `, ${erros.length} erro(s) encontrado(s)` : ' com sucesso'}`,
+      importadas: despesasImportadas.length,
+      erros,
+    };
   }
 }
 

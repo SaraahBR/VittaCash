@@ -1,8 +1,10 @@
 import express from 'express';
+import multer from 'multer';
 import expenseController from '../controllers/expenseController.js';
 import { autenticar } from '../middleware/autenticacao.js';
 
 const roteador = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 roteador.use(autenticar);
 
@@ -269,6 +271,59 @@ roteador.get('/report', expenseController.relatorio);
  *         description: Erro interno do servidor
  */
 roteador.get('/export', expenseController.exportar);
+
+/**
+ * @swagger
+ * /api/expenses/import:
+ *   post:
+ *     summary: Importar despesas de arquivo CSV
+ *     tags: [Despesas]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - file
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: Arquivo CSV com despesas
+ *     responses:
+ *       200:
+ *         description: Despesas importadas com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: 2 despesas importadas com sucesso
+ *                 importadas:
+ *                   type: integer
+ *                   example: 2
+ *                 erros:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       linha:
+ *                         type: integer
+ *                       erro:
+ *                         type: string
+ *       400:
+ *         description: Arquivo não enviado ou formato inválido
+ *       401:
+ *         description: Não autorizado
+ *       500:
+ *         description: Erro interno do servidor
+ */
+roteador.post('/import', upload.single('file'), expenseController.importar);
 
 /**
  * @swagger

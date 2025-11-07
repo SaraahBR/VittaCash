@@ -13,10 +13,16 @@ dotenv.config();
 const app = express();
 const PORTA = process.env.PORT || 4000;
 
-app.use(cors({
+// Configuração CORS
+const corsOptions = {
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
-}));
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
