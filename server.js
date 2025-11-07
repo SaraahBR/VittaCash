@@ -19,8 +19,8 @@ const corsOptions = {
         // Lista de origens permitidas (separadas por vírgula no .env)
         const origensPermitidas = process.env.FRONTEND_URL?.split(',').map(url => url.trim()) || ['http://localhost:3000'];
 
-        // Permitir requisições sem origin (ex: Postman, curl) em desenvolvimento
-        if (!origin && process.env.NODE_ENV === 'development') {
+        // Permitir requisições sem origin (health checks, Postman, curl)
+        if (!origin) {
             return callback(null, true);
         }
 
