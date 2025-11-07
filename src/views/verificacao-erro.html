@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Erro na Verificação - VittaCash</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+      width: 100%;
+      padding: 60px 40px;
+      text-align: center;
+      animation: slideUp 0.5s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 30px;
+    }
+
+    .icon svg {
+      width: 40px;
+      height: 40px;
+      fill: white;
+    }
+
+    h1 {
+      color: #333;
+      font-size: 28px;
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+
+    p {
+      color: #666;
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+
+    .error-box {
+      background: #fff5f5;
+      border-left: 4px solid #f5576c;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 30px 0;
+      text-align: left;
+    }
+
+    .error-box p {
+      margin: 0;
+      font-size: 14px;
+      color: #c53030;
+      font-weight: 500;
+    }
+
+    .button {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-decoration: none;
+      padding: 15px 40px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 16px;
+      transition: transform 0.3s, box-shadow 0.3s;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      margin: 10px;
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    }
+
+    .button-secondary {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+    }
+
+    .button-secondary:hover {
+      box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+      </svg>
+    </div>
+
+    <h1>❌ Erro na Verificação</h1>
+
+    <p>
+      Não foi possível verificar seu e-mail. O link pode estar expirado ou inválido.
+    </p>
+
+    <div class="error-box">
+      <p id="errorMessage">Token inválido ou expirado</p>
+    </div>
+
+    <p style="font-size: 14px; color: #888;">
+      Os links de verificação expiram em <strong>24 horas</strong>.
+      Se o seu link expirou, você pode solicitar um novo.
+    </p>
+
+    <div class="buttons">
+      <a href="/api/auth/reenviar" class="button button-secondary" id="resendButton">
+        📧 Reenviar E-mail de Verificação
+      </a>
+
+      <a href="/" class="button">
+        🏠 Voltar para Início
+      </a>
+    </div>
+  </div>
+
+  <script>
+    // Pegar mensagem de erro da URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const mensagem = urlParams.get('mensagem');
+    const email = urlParams.get('email');
+
+    if (mensagem) {
+      document.getElementById('errorMessage').textContent = decodeURIComponent(mensagem);
+    }
+
+    // Configurar botão de reenvio
+    const resendButton = document.getElementById('resendButton');
+    if (email) {
+      resendButton.href = `/api/auth/reenviar?email=${encodeURIComponent(email)}`;
+    } else {
+      resendButton.style.display = 'none';
+    }
+  </script>
+</body>
+</html>
+
