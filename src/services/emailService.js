@@ -4,16 +4,31 @@ import prisma from '../config/bancoDados.js';
 
 class EmailService {
   constructor() {
-    // Configuração do transportador de e-mail
+    // Configuração do transportador de e-mail com timeout e retry
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: process.env.SMTP_PORT || 587,
+      port: parseInt(process.env.SMTP_PORT) || 587,
       secure: false, // true para 465, false para outras portas
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      connectionTimeout: 10000, // 10 segundos
+      greetingTimeout: 10000,   // 10 segundos
+      socketTimeout: 30000,      // 30 segundos
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 100,
+      rateDelta: 1000,
+      rateLimit: 5,
     });
+  }
+
+  /**
+   * Verificar se SMTP está configurado
+   */
+  estaConfigurado() {
+    return !!(process.env.SMTP_USER && process.env.SMTP_PASS);
   }
 
   /**
@@ -106,6 +121,16 @@ class EmailService {
    * @param {string} token - Token de verificação
    */
   async enviarEmailVerificacao(email, nome, token) {
+    // Se SMTP não estiver configurado, apenas logar
+    if (!this.estaConfigurado()) {
+      console.warn('⚠️  SMTP não configurado. E-mail não será enviado.');
+      console.log(`📧 [MODO DEV] Link de verificação para ${email}:`);
+      const urlFrontend = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const urlVerificacao = `${urlFrontend}/auth/verificar-email?token=${token}&email=${encodeURIComponent(email)}`;
+      console.log(`🔗 ${urlVerificacao}`);
+      return;
+    }
+
     // URL do frontend para verificação de e-mail
     const urlFrontend = process.env.FRONTEND_URL || 'http://localhost:3000';
     const urlVerificacao = `${urlFrontend}/auth/verificar-email?token=${token}&email=${encodeURIComponent(email)}`;
@@ -259,7 +284,15 @@ class EmailService {
       html: htmlEmail,
     };
 
-    await this.transporter.sendMail(mailOptions);
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log(`✅ E-mail de verificação enviado para: ${email}`);
+    } catch (erro) {
+      console.error('❌ Erro ao enviar e-mail:', erro.message);
+      console.log(`📧 [FALLBACK] Link de verificação para ${email}:`);
+      console.log(`🔗 ${urlVerificacao}`);
+      // Não lançar erro para não quebrar o fluxo de cadastro
+    }
   }
 
   /**
@@ -268,6 +301,12 @@ class EmailService {
    * @param {string} nome - Nome do usuário
    */
   async enviarEmailBoasVindas(email, nome) {
+    // Se SMTP não estiver configurado, apenas logar
+    if (!this.estaConfigurado()) {
+      console.warn('⚠️  SMTP não configurado. E-mail de boas-vindas não será enviado.');
+      return;
+    }
+
     const htmlEmail = `
       <!DOCTYPE html>
       <html lang="pt-BR">
@@ -412,7 +451,13 @@ class EmailService {
       html: htmlEmail,
     };
 
-    await this.transporter.sendMail(mailOptions);
+    try {
+      await this.transporter.sendMail(mailOptions);
+      console.log(`✅ E-mail de boas-vindas enviado para: ${email}`);
+    } catch (erro) {
+      console.error('❌ Erro ao enviar e-mail de boas-vindas:', erro.message);
+      // Não lançar erro para não quebrar o fluxo de login
+    }
   }
 
   /**
