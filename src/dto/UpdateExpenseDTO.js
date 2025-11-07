@@ -7,6 +7,8 @@ export const AtualizarDespesaDTOSchema = Joi.object({
   data: Joi.date().optional(),
   categoria: Joi.string().optional(),
   recorrente: Joi.boolean().optional(),
+  recurrenceType: Joi.string().valid(...Object.values(TIPOS_RECORRENCIA)).optional(),
+  notas: Joi.string().allow(null, '').optional(),
 }).min(1);
 
 export class UpdateExpenseDTO {
@@ -16,6 +18,9 @@ export class UpdateExpenseDTO {
     if (dados.data) this.data = new Date(dados.data);
     if (dados.categoria) this.categoria = dados.categoria;
     if (dados.recorrente !== undefined) this.recorrente = Boolean(dados.recorrente);
+    if (dados.tipoRecorrencia) this.recurrenceType = dados.tipoRecorrencia;
+    if (dados.recurrenceType) this.recurrenceType = dados.recurrenceType;
+    if (dados.notas !== undefined) this.notas = dados.notas;
   }
 
   validar() {

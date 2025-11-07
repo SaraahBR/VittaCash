@@ -20,12 +20,12 @@ class ExpenseService {
     }
 
     const despesa = await expenseRepository.criar({
-      title: value.titulo,
+      title: value.descricao,
       amount: value.valor,
       date: value.data,
       category: value.categoria,
       recurring: value.recorrente,
-      recurrenceType: value.tipoRecorrencia,
+      recurrenceType: value.recurrenceType || 'NONE',
       notes: value.notas,
       userId: idUsuario,
     });
@@ -55,12 +55,12 @@ class ExpenseService {
     }
 
     const dadosAtualizados = {};
-    if (value.titulo) dadosAtualizados.title = value.titulo;
+    if (value.descricao) dadosAtualizados.title = value.descricao;
     if (value.valor) dadosAtualizados.amount = value.valor;
     if (value.data) dadosAtualizados.date = value.data;
     if (value.categoria) dadosAtualizados.category = value.categoria;
     if (value.recorrente !== undefined) dadosAtualizados.recurring = value.recorrente;
-    if (value.tipoRecorrencia) dadosAtualizados.recurrenceType = value.tipoRecorrencia;
+    if (value.recurrenceType) dadosAtualizados.recurrenceType = value.recurrenceType;
     if (value.notas !== undefined) dadosAtualizados.notes = value.notas;
 
     const despesa = await expenseRepository.atualizar(id, dadosAtualizados);
@@ -182,6 +182,8 @@ class ExpenseService {
           categoria: valores[2],
           data: valores[3],
           recorrente: valores[4] === 'true',
+          tipoRecorrencia: 'NONE',
+          notas: null,
         };
 
         const despesa = await this.criarDespesa(idUsuario, despesaData);

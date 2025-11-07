@@ -8,6 +8,8 @@ export class ExpenseResponseDTO {
       ? despesa.date.toISOString().split('T')[0]
       : despesa.date;
     this.recorrente = despesa.recurring;
+    this.tipoRecorrencia = despesa.recurrenceType || 'NONE';
+    this.notas = despesa.notes || null;
     this.userId = despesa.userId;
     this.createdAt = despesa.createdAt;
     this.updatedAt = despesa.updatedAt;

@@ -22,6 +22,10 @@ export const CriarDespesaDTOSchema = Joi.object({
   }),
 
   recorrente: Joi.boolean().default(false),
+
+  recurrenceType: Joi.string().valid(...Object.values(TIPOS_RECORRENCIA)).default('NONE'),
+
+  notas: Joi.string().allow(null, '').optional(),
 });
 
 export class CreateExpenseDTO {
@@ -31,6 +35,8 @@ export class CreateExpenseDTO {
     this.data = new Date(dados.data);
     this.categoria = dados.categoria;
     this.recorrente = Boolean(dados.recorrente);
+    this.recurrenceType = dados.tipoRecorrencia || dados.recurrenceType || 'NONE';
+    this.notas = dados.notas || null;
   }
 
   validar() {

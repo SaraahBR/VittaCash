@@ -9,7 +9,7 @@ export const CATEGORIAS = [
   'Outros',
 ];
 
-export const TIPOS_RECORRENCIA = ['NENHUMA', 'MENSAL', 'ANUAL'];
+export const TIPOS_RECORRENCIA = ['NONE', 'NENHUMA', 'MENSAL', 'ANUAL'];
 
 export const STATUS_HTTP = {
   OK: 200,
