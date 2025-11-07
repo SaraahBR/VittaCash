@@ -17,9 +17,15 @@ const PORTA = process.env.PORT || 4000;
 const corsOptions = {
     origin: (origin, callback) => {
         // Lista de origens permitidas (separadas por vírgula no .env)
-        const origensPermitidas = process.env.FRONTEND_URL?.split(',').map(url => url.trim()) || ['http://localhost:3000'];
+        const origensPermitidas = [
+            'http://localhost:3000',
+            'http://localhost:4000', // Swagger local
+            'https://vittacash.onrender.com', // Backend em produção
+            'https://vittacash.vercel.app', // Frontend em produção (quando houver)
+            ...(process.env.FRONTEND_URL?.split(',').map(url => url.trim()) || [])
+        ];
 
-        // Permitir requisições sem origin (health checks, Postman, curl)
+        // Permitir requisições sem origin (Swagger, Postman, curl, health checks)
         if (!origin) {
             return callback(null, true);
         }
