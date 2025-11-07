@@ -87,14 +87,56 @@ app.use((req, res) => {
 
 app.use(tratadorErro);
 
-app.listen(PORTA, () => {
+// Tratamento de erros não capturados
+process.on('uncaughtException', (erro) => {
+    console.error('❌ Erro não capturado:', erro);
+    console.error('Stack:', erro.stack);
+});
+
+process.on('unhandledRejection', (motivo, promise) => {
+    console.error('❌ Promise rejeitada não tratada:', motivo);
+    console.error('Promise:', promise);
+});
+
+// Iniciar servidor
+const server = app.listen(PORTA, '0.0.0.0', () => {
     console.log('='.repeat(50));
     console.log(`🚀 Servidor VittaCash rodando!`);
-    console.log(`📊 Ambiente: ${process.env.NODE_ENV}`);
-    console.log(`🌐 URL: http://localhost:${PORTA} (redireciona para /api-docs)`);
-    console.log(`📚 Documentação: http://localhost:${PORTA}/api-docs`);
-    console.log(`🎯 Frontend permitido: ${process.env.FRONTEND_URL}`);
+    console.log(`📊 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🌐 Porta: ${PORTA}`);
+    console.log(`🌐 Host: 0.0.0.0 (todas interfaces)`);
+    console.log(`📚 Documentação: /api-docs`);
+    console.log(`❤️  Health Check: /health`);
+    console.log(`🎯 Frontend permitido: ${process.env.FRONTEND_URL || 'não configurado'}`);
     console.log('='.repeat(50));
 });
+
+// Tratamento de erro ao iniciar servidor
+server.on('error', (erro) => {
+    if (erro.code === 'EADDRINUSE') {
+        console.error(`❌ Porta ${PORTA} já está em uso`);
+    } else {
+        console.error('❌ Erro ao iniciar servidor:', erro);
+    }
+    process.exit(1);
+});
+
+// Graceful shutdown
+const gracefulShutdown = () => {
+    console.log('\n⚠️  Recebido sinal de término, encerrando graciosamente...');
+    server.close(() => {
+        console.log('✅ Servidor encerrado');
+        process.exit(0);
+    });
+
+    // Forçar encerramento após 10 segundos
+    setTimeout(() => {
+        console.error('❌ Forçando encerramento após timeout');
+        process.exit(1);
+    }, 10000);
+};
+
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
 
 export default app;
