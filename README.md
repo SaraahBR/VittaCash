@@ -6,6 +6,7 @@
 ![Express](https://img.shields.io/badge/Express-v5.1-000000?style=for-the-badge&logo=express&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-v6.19-2D3748?style=for-the-badge&logo=prisma&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white)
+![SendGrid](https://img.shields.io/badge/SendGrid-3498DB?style=for-the-badge&logo=sendgrid&logoColor=white)
 ![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=json-web-tokens&logoColor=white)
 
 **Sistema de Gerenciamento de Despesas Pessoais**
@@ -86,6 +87,7 @@ Fornecer uma solução robusta e escalável para controle financeiro pessoal, co
 - **[CORS](https://github.com/expressjs/cors)** - Cross-Origin Resource Sharing
 - **[dotenv](https://github.com/motdotla/dotenv)** - Gerenciamento de variáveis de ambiente
 - **[Nodemailer](https://nodemailer.com/)** - Envio de e-mails
+- **[SendGrid](https://sendgrid.com/)** - Serviço de e-mail transacional (100 emails/dia grátis)
 - **[Multer](https://github.com/expressjs/multer)** - Upload de arquivos (CSV)
 
 ### **Desenvolvimento**
@@ -103,7 +105,8 @@ Fornecer uma solução robusta e escalável para controle financeiro pessoal, co
 - ✅ Verificação de e-mail por token
 - ✅ Reenvio de e-mail de verificação
 - ✅ Proteção de rotas com JWT
-- ✅ E-mails HTML responsivos
+- ✅ E-mails HTML responsivos via SendGrid
+- ✅ Sistema de retry automático (3 tentativas)
 
 ### 💸 **Gerenciamento de Despesas**
 - ✅ Criar despesa
@@ -796,6 +799,7 @@ Supermercado,150.50,Alimentação,2024-11-06,false
 ### **Pré-requisitos**
 - Node.js v20 ou superior
 - PostgreSQL (ou Supabase)
+- SendGrid (gratuito - 100 emails/dia)
 - Git
 
 ### **Passo a Passo**
@@ -865,11 +869,12 @@ FRONTEND_URL="http://localhost:3000,https://vittacash.vercel.app"
 GOOGLE_CLIENT_ID="xxx.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET="GOCSPX-xxx"
 
-# E-mail (SMTP Gmail)
-SMTP_HOST=smtp.gmail.com
+# E-mail (SendGrid)
+SMTP_HOST=smtp.sendgrid.net
 SMTP_PORT=587
-SMTP_USER=seuemail@gmail.com
-SMTP_PASS="xxxx xxxx xxxx xxxx"
+SMTP_USER=apikey
+SMTP_PASS="SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+EMAIL_FROM="seuemail@gmail.com"
 ```
 
 ### **Descrição das Variáveis**
@@ -884,10 +889,18 @@ SMTP_PASS="xxxx xxxx xxxx xxxx"
 | `FRONTEND_URL` | URLs permitidas (CORS) | Separadas por vírgula |
 | `GOOGLE_CLIENT_ID` | ID OAuth Google | Do console Google Cloud |
 | `GOOGLE_CLIENT_SECRET` | Secret OAuth Google | Do console Google Cloud |
-| `SMTP_HOST` | Host SMTP | `smtp.gmail.com` |
+| `SMTP_HOST` | Host SMTP SendGrid | `smtp.sendgrid.net` |
 | `SMTP_PORT` | Porta SMTP | `587` |
-| `SMTP_USER` | E-mail remetente | `seu@gmail.com` |
-| `SMTP_PASS` | Senha de app Gmail | Gerada em 2FA |
+| `SMTP_USER` | Usuário SendGrid | `apikey` (fixo) |
+| `SMTP_PASS` | API Key SendGrid | Gerada no Dashboard SendGrid |
+| `EMAIL_FROM` | E-mail remetente | Single Sender verificado |
+
+### **Como Obter Credenciais**
+
+- **SendGrid API Key:** https://app.sendgrid.com/settings/api_keys
+- **SendGrid Single Sender:** https://app.sendgrid.com/settings/sender_auth
+- **Google OAuth Credentials:** https://console.cloud.google.com/apis/credentials
+- **Supabase Database URLs:** https://supabase.com/dashboard/project/_/settings/database
 
 ---
 
@@ -1104,20 +1117,30 @@ SMTP_PASS="xxxx xxxx xxxx xxxx"
 **`enviarEmailVerificacao(email, token)`**
 - Gera link de verificação
 - Cria HTML responsivo
-- Envia via Nodemailer (SMTP)
-- Fallback: log do link (desenvolvimento)
+- Envia via Nodemailer + SendGrid
+- Sistema de retry (3 tentativas com backoff exponencial)
+- Fallback: log do link no console (se falhar)
 
-**Configuração SMTP:**
-- Host: `smtp.gmail.com`
+**Configuração SMTP (SendGrid):**
+- Host: `smtp.sendgrid.net`
 - Port: `587`
-- Secure: `false` (STARTTLS)
-- Auth: `SMTP_USER` + `SMTP_PASS`
+- User: `apikey` (fixo)
+- Pass: API Key do SendGrid
+- TLS: 1.2+ forçado
+
+**Recursos:**
+- ✅ 100 emails/dia grátis
+- ✅ 99%+ taxa de entrega
+- ✅ Dashboard com analytics
+- ✅ Sistema de retry automático
+- ✅ Timeout aumentado (60s)
 
 **Template HTML:**
 - Design responsivo
-- Botão CTA verde
+- Botão CTA com gradiente
 - Link alternativo
 - Expiração: 24h
+- Brand VittaCash
 
 ---
 
@@ -1404,6 +1427,52 @@ npx prisma migrate deploy
 
 ---
 
+### **SendGrid (Envio de E-mails)**
+
+O projeto utiliza **SendGrid** para envio de e-mails transacionais (verificação de conta, etc).
+
+#### **Por que SendGrid?**
+- ✅ **100 emails/dia grátis** (suficiente para MVP)
+- ✅ **99%+ taxa de entrega** (melhor que SMTP direto)
+- ✅ **Funciona no Render Free Tier** (porta 587 não bloqueada)
+- ✅ **Dashboard com analytics** (rastreamento de e-mails)
+- ✅ **API simples** (fácil integração)
+
+#### **Configuração (5 minutos):**
+
+1. **Crie conta no SendGrid**
+   - Acesse: https://sendgrid.com/free/
+   - Cadastre-se gratuitamente
+
+2. **Gere uma API Key**
+   - Dashboard → Settings → API Keys
+   - Create API Key → Full Access
+   - Nome: `VittaCash-Production`
+   - **Copie a chave** (só aparece uma vez!)
+
+3. **Verifique Single Sender**
+   - Settings → Sender Authentication
+   - Verify a Single Sender
+   - Preencha com seu e-mail
+   - **Confirme no e-mail recebido**
+
+4. **Configure no Render**
+   ```env
+   SMTP_HOST=smtp.sendgrid.net
+   SMTP_PORT=587
+   SMTP_USER=apikey
+   SMTP_PASS=SG.xxxxxxxxxxxxxx (sua API Key)
+   EMAIL_FROM=seuemail@gmail.com (e-mail verificado)
+   ```
+
+5. **Monitore no Dashboard**
+   - Activity: https://app.sendgrid.com/activity
+   - Veja status de entrega, aberturas, etc.
+
+**Documentação completa:** `SOLUCAO-SMTP.md` (na raiz do projeto)
+
+---
+
 ## 👩‍💻 Autora
 
 <div align="center">
@@ -1456,6 +1525,7 @@ SOFTWARE.
 - **Express** - Framework robusto
 - **Supabase** - Hosting PostgreSQL gratuito
 - **Render** - Deploy simplificado
+- **SendGrid** - Serviço de e-mail transacional confiável (100 emails/dia grátis)
 - **Google** - OAuth 2.0
 
 ---
