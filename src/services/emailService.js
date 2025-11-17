@@ -5,30 +5,47 @@ import prisma from '../config/bancoDados.js';
 class EmailService {
   constructor() {
     // Configuração do transportador de e-mail com timeout e retry
+    const port = parseInt(process.env.SMTP_PORT) || 587;
+
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT) || 587,
-      secure: false, // true para 465, false para outras portas
+      port: port,
+      secure: port === 465, // true para 465 (SSL), false para 587 (TLS)
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
-      connectionTimeout: 10000, // 10 segundos
-      greetingTimeout: 10000,   // 10 segundos
-      socketTimeout: 30000,      // 30 segundos
-      pool: true,
-      maxConnections: 5,
-      maxMessages: 100,
-      rateDelta: 1000,
-      rateLimit: 5,
+      connectionTimeout: 60000, // 60 segundos (aumentado)
+      greetingTimeout: 30000,   // 30 segundos
+      socketTimeout: 60000,     // 60 segundos (aumentado)
+      pool: false,              // Desabilitar pool em produção
+      maxConnections: 1,        // Uma conexão por vez
+      tls: {
+        rejectUnauthorized: false, // Aceitar certificados auto-assinados
+        minVersion: 'TLSv1.2',     // Forçar TLS 1.2+
+      },
+      debug: process.env.NODE_ENV === 'development', // Debug apenas em dev
+      logger: process.env.NODE_ENV === 'development', // Logs apenas em dev
     });
+
+    // Número máximo de tentativas
+    this.maxRetries = 3;
   }
 
   /**
    * Verificar se SMTP está configurado
    */
   estaConfigurado() {
-    return !!(process.env.SMTP_USER && process.env.SMTP_PASS);
+    const configurado = !!(process.env.SMTP_USER && process.env.SMTP_PASS);
+
+    if (!configurado) {
+      console.warn('\n⚠️  SMTP NÃO CONFIGURADO!');
+      console.warn('   Configure as variáveis de ambiente:');
+      console.warn('   - SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM');
+      console.warn('   Veja: SENDGRID-SETUP.md para instruções\n');
+    }
+
+    return configurado;
   }
 
   /**
@@ -115,6 +132,28 @@ class EmailService {
   }
 
   /**
+   * Método auxiliar para enviar e-mail com retry
+   */
+  async enviarComRetry(mailOptions, tentativa = 1) {
+    try {
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log(`✅ E-mail enviado com sucesso (tentativa ${tentativa}): ${info.messageId}`);
+      return true;
+    } catch (erro) {
+      console.error(`❌ Erro na tentativa ${tentativa}:`, erro.message);
+
+      if (tentativa < this.maxRetries) {
+        const delay = Math.pow(2, tentativa) * 1000; // Backoff exponencial: 2s, 4s, 8s
+        console.log(`⏳ Aguardando ${delay/1000}s antes da próxima tentativa...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.enviarComRetry(mailOptions, tentativa + 1);
+      }
+
+      throw erro;
+    }
+  }
+
+  /**
    * Envia e-mail de verificação para novo cadastro
    * @param {string} email - E-mail do destinatário
    * @param {string} nome - Nome do usuário
@@ -125,15 +164,19 @@ class EmailService {
     if (!this.estaConfigurado()) {
       console.warn('⚠️  SMTP não configurado. E-mail não será enviado.');
       console.log(`📧 [MODO DEV] Link de verificação para ${email}:`);
-      const urlFrontend = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const urlFrontend = process.env.FRONTEND_URL?.split(',')[0] || 'http://localhost:3000';
       const urlVerificacao = `${urlFrontend}/auth/verificar-email?token=${token}&email=${encodeURIComponent(email)}`;
       console.log(`🔗 ${urlVerificacao}`);
       return;
     }
 
     // URL do frontend para verificação de e-mail
-    const urlFrontend = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const urlVerificacao = `${urlFrontend}/auth/verificar-email?token=${token}&email=${encodeURIComponent(email)}`;
+    // Se tiver múltiplas URLs (dev,prod), pega a primeira (produção)
+    const urlsFrontend = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const urlFrontend = urlsFrontend.includes(',') ?
+      urlsFrontend.split(',').find(url => url.includes('vercel.app')) || urlsFrontend.split(',')[0] :
+      urlsFrontend;
+    const urlVerificacao = `${urlFrontend.trim()}/auth/verificar-email?token=${token}&email=${encodeURIComponent(email)}`;
 
     const htmlEmail = `
       <!DOCTYPE html>
@@ -278,20 +321,25 @@ class EmailService {
     `;
 
     const mailOptions = {
-      from: `"VittaCash" <${process.env.SMTP_USER}>`,
+      from: `"VittaCash" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
       to: email,
       subject: '✅ Confirme seu e-mail - VittaCash',
       html: htmlEmail,
     };
 
     try {
-      await this.transporter.sendMail(mailOptions);
+      await this.enviarComRetry(mailOptions);
       console.log(`✅ E-mail de verificação enviado para: ${email}`);
     } catch (erro) {
-      console.error('❌ Erro ao enviar e-mail:', erro.message);
+      console.error('❌ Erro ao enviar e-mail após todas as tentativas:', erro.message);
       console.log(`📧 [FALLBACK] Link de verificação para ${email}:`);
       console.log(`🔗 ${urlVerificacao}`);
       // Não lançar erro para não quebrar o fluxo de cadastro
+      // Mas logar de forma mais visível
+      console.log('\n⚠️  ATENÇÃO: Envio de e-mail falhou. Possíveis causas:');
+      console.log('   1. Render pode estar bloqueando SMTP na porta 587');
+      console.log('   2. Gmail pode estar bloqueando o IP do Render');
+      console.log('   3. Verifique as credenciais SMTP no painel do Render\n');
     }
   }
 
@@ -445,17 +493,17 @@ class EmailService {
     `;
 
     const mailOptions = {
-      from: `"VittaCash" <${process.env.SMTP_USER}>`,
+      from: `"VittaCash" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
       to: email,
       subject: '🎉 Bem-vindo ao VittaCash!',
       html: htmlEmail,
     };
 
     try {
-      await this.transporter.sendMail(mailOptions);
+      await this.enviarComRetry(mailOptions);
       console.log(`✅ E-mail de boas-vindas enviado para: ${email}`);
     } catch (erro) {
-      console.error('❌ Erro ao enviar e-mail de boas-vindas:', erro.message);
+      console.error('❌ Erro ao enviar e-mail de boas-vindas após todas as tentativas:', erro.message);
       // Não lançar erro para não quebrar o fluxo de login
     }
   }
