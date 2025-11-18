@@ -269,7 +269,7 @@ class EmailService {
             display: inline-block;
             padding: 18px 50px;
             background: linear-gradient(135deg, #FFD93D 0%, #6BCB77 50%, #4D96FF 100%);
-            color: #f5f5f0;
+            color: #f5f5f0 !important;
             text-decoration: none;
             border-radius: 50px;
             font-weight: 700;
