@@ -399,7 +399,7 @@ class EmailService {
       <body>
         <div class="email-wrapper">
           <div class="header">
-            <img src="${process.env.LOGO_URL || 'https://via.placeholder.com/220x80/FFD93D/2c3e50?text=VittaCash'}" alt="VittaCash Logo" class="logo" onerror="this.style.display='none'" />
+            <img src="${process.env.LOGO_URL || 'https://raw.githubusercontent.com/SaraahBR/VittaCash/main/public/LOGO_VittaCash.png'}" alt="VittaCash Logo" class="logo" onerror="this.style.display='none'" />
           </div>
           
           <div class="content">
@@ -415,7 +415,7 @@ class EmailService {
             
             <div class="cta-container">
               <a href="${urlVerificacao}" class="cta-button">
-                Verificar Meu E-mail
+                VERIFICAR MEU E-MAIL
               </a>
             </div>
 
@@ -714,7 +714,7 @@ class EmailService {
       <body>
         <div class="email-wrapper">
           <div class="header">
-            <img src="${process.env.LOGO_URL || 'https://via.placeholder.com/220x80/FFD93D/2c3e50?text=VittaCash'}" alt="VittaCash Logo" class="logo" onerror="this.style.display='none'" />
+            <img src="${process.env.LOGO_URL || 'https://raw.githubusercontent.com/SaraahBR/VittaCash/main/public/LOGO_VittaCash.png'}" alt="VittaCash Logo" class="logo" onerror="this.style.display='none'" />
           </div>
           
           <div class="content">
