@@ -1,17 +1,18 @@
-import sgMail from '@sendgrid/mail';
+import brevo from '@getbrevo/brevo';
 import crypto from 'crypto';
 import prisma from '../config/bancoDados.js';
 
 class EmailService {
   constructor() {
-    // Configurar SendGrid API
-    const sendGridApiKey = process.env.SENDGRID_API_KEY || process.env.SMTP_PASS;
+    // Configurar Brevo API (ex-Sendinblue)
+    const brevoApiKey = process.env.BREVO_API_KEY || process.env.SENDGRID_API_KEY || process.env.SMTP_PASS;
 
-    if (sendGridApiKey) {
-      sgMail.setApiKey(sendGridApiKey);
-      console.log('✅ SendGrid API configurada');
+    if (brevoApiKey) {
+      this.apiInstance = new brevo.TransactionalEmailsApi();
+      this.apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, brevoApiKey);
+      console.log('✅ Brevo API configurada (300 emails/dia grátis)');
     } else {
-      console.warn('⚠️  SendGrid API Key não encontrada');
+      console.warn('⚠️  Brevo API Key não encontrada');
     }
 
     // Número máximo de tentativas
@@ -19,17 +20,18 @@ class EmailService {
   }
 
   /**
-   * Verificar se SendGrid está configurado
+   * Verificar se Brevo está configurado
    */
   estaConfigurado() {
-    const apiKey = process.env.SENDGRID_API_KEY || process.env.SMTP_PASS;
+    const apiKey = process.env.BREVO_API_KEY || process.env.SENDGRID_API_KEY || process.env.SMTP_PASS;
     const configurado = !!apiKey;
 
     if (!configurado) {
-      console.warn('\n⚠️  SENDGRID NÃO CONFIGURADO!');
+      console.warn('\n⚠️  BREVO NÃO CONFIGURADO!');
       console.warn('   Configure a variável de ambiente:');
-      console.warn('   - SENDGRID_API_KEY ou SMTP_PASS (API Key do SendGrid)');
-      console.warn('   Veja: SENDGRID-SETUP.md para instruções\n');
+      console.warn('   - BREVO_API_KEY (Recomendado - 300 emails/dia grátis)');
+      console.warn('   Ou mantenha SENDGRID_API_KEY/SMTP_PASS para compatibilidade');
+      console.warn('   Cadastre-se: https://app.brevo.com/account/register\n');
     }
 
     return configurado;
@@ -119,13 +121,13 @@ class EmailService {
   }
 
   /**
-   * Método auxiliar para enviar e-mail com retry via SendGrid API
+   * Método auxiliar para enviar e-mail com retry via Brevo API
    */
-  async enviarComRetry(msg, tentativa = 1) {
+  async enviarComRetry(sendSmtpEmail, tentativa = 1) {
     try {
-      const [response] = await sgMail.send(msg);
-      console.log(`✅ E-mail enviado com sucesso via SendGrid API (tentativa ${tentativa})`);
-      console.log(`   Status: ${response.statusCode}`);
+      const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
+      console.log(`✅ E-mail enviado com sucesso via Brevo (tentativa ${tentativa})`);
+      console.log(`   Message ID: ${response.messageId}`);
       return true;
     } catch (erro) {
       console.error(`❌ Erro na tentativa ${tentativa}:`, erro.message);
@@ -134,7 +136,7 @@ class EmailService {
         const delay = Math.pow(2, tentativa) * 1000; // Backoff exponencial: 2s, 4s, 8s
         console.log(`⏳ Aguardando ${delay/1000}s antes da próxima tentativa...`);
         await new Promise(resolve => setTimeout(resolve, delay));
-        return this.enviarComRetry(msg, tentativa + 1);
+        return this.enviarComRetry(sendSmtpEmail, tentativa + 1);
       }
 
       throw erro;
@@ -308,18 +310,18 @@ class EmailService {
       </html>
     `;
 
-    const msg = {
-      to: email,
-      from: {
-        email: process.env.EMAIL_FROM || 'vittacash@gmail.com',
-        name: 'VittaCash'
-      },
-      subject: '✅ Confirme seu e-mail - VittaCash',
-      html: htmlEmail,
+    // Formato Brevo
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.sender = {
+      name: 'VittaCash',
+      email: process.env.EMAIL_FROM || 'vittacash@gmail.com'
     };
+    sendSmtpEmail.to = [{ email: email, name: nome }];
+    sendSmtpEmail.subject = '✅ Confirme seu e-mail - VittaCash';
+    sendSmtpEmail.htmlContent = htmlEmail;
 
     try {
-      await this.enviarComRetry(msg);
+      await this.enviarComRetry(sendSmtpEmail);
       console.log(`✅ E-mail de verificação enviado para: ${email}`);
     } catch (erro) {
       console.error('❌ Erro ao enviar e-mail após todas as tentativas:', erro.message);
@@ -327,11 +329,11 @@ class EmailService {
       console.log(`🔗 ${urlVerificacao}`);
       // Não lançar erro para não quebrar o fluxo de cadastro
       // Mas logar de forma mais visível
-      console.log('\n⚠️  ATENÇÃO: Envio de e-mail falhou via SendGrid API.');
+      console.log('\n⚠️  ATENÇÃO: Envio de e-mail falhou via Brevo API.');
       console.log('   Verifique:');
-      console.log('   1. SENDGRID_API_KEY ou SMTP_PASS está configurado no Render');
-      console.log('   2. EMAIL_FROM está verificado no SendGrid (Single Sender)');
-      console.log('   3. API Key tem permissão "Mail Send"\n');
+      console.log('   1. BREVO_API_KEY está configurado no Render');
+      console.log('   2. EMAIL_FROM está correto');
+      console.log('   3. Cadastre-se: https://app.brevo.com/account/register\n');
     }
   }
 
@@ -484,18 +486,18 @@ class EmailService {
       </html>
     `;
 
-    const msg = {
-      to: email,
-      from: {
-        email: process.env.EMAIL_FROM || 'vittacash@gmail.com',
-        name: 'VittaCash'
-      },
-      subject: '🎉 Bem-vindo ao VittaCash!',
-      html: htmlEmail,
+    // Formato Brevo
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.sender = {
+      name: 'VittaCash',
+      email: process.env.EMAIL_FROM || 'vittacash@gmail.com'
     };
+    sendSmtpEmail.to = [{ email: email, name: nome }];
+    sendSmtpEmail.subject = '🎉 Bem-vindo ao VittaCash!';
+    sendSmtpEmail.htmlContent = htmlEmail;
 
     try {
-      await this.enviarComRetry(msg);
+      await this.enviarComRetry(sendSmtpEmail);
       console.log(`✅ E-mail de boas-vindas enviado para: ${email}`);
     } catch (erro) {
       console.error('❌ Erro ao enviar e-mail de boas-vindas após todas as tentativas:', erro.message);

@@ -24,8 +24,8 @@
   "author": "Seu Nome",
   "license": "MIT",
   "dependencies": {
+    "@getbrevo/brevo": "^3.0.1",
     "@prisma/client": "^6.19.0",
-    "@sendgrid/mail": "^8.1.6",
     "bcryptjs": "^3.0.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",

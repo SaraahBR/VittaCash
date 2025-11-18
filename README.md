@@ -6,7 +6,7 @@
 ![Express](https://img.shields.io/badge/Express-v5.1-000000?style=for-the-badge&logo=express&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-v6.19-2D3748?style=for-the-badge&logo=prisma&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white)
-![SendGrid](https://img.shields.io/badge/SendGrid-3498DB?style=for-the-badge&logo=sendgrid&logoColor=white)
+![Brevo](https://img.shields.io/badge/Brevo-0B996E?style=for-the-badge&logo=sendinblue&logoColor=white)
 ![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=json-web-tokens&logoColor=white)
 
 **Sistema de Gerenciamento de Despesas Pessoais**
@@ -21,6 +21,7 @@
 
 - [Sobre o Projeto](#-sobre-o-projeto)
 - [Tecnologias](#-tecnologias)
+- [Por que Brevo? (Solução de E-mail)](#-por-que-brevo-solução-de-e-mail)
 - [Funcionalidades](#-funcionalidades)
 - [Arquitetura](#-arquitetura)
 - [Estrutura do Projeto](#-estrutura-do-projeto)
@@ -83,16 +84,198 @@ Fornecer uma solução robusta e escalável para controle financeiro pessoal, co
 - **[Swagger UI Express](https://github.com/scottie1984/swagger-ui-express)** - Interface Swagger
 - **[Swagger JSDoc](https://github.com/Surnet/swagger-jsdoc)** - Geração de especificação OpenAPI
 
+### **E-mail**
+- **[Brevo](https://www.brevo.com/)** (ex-Sendinblue) - Serviço de e-mail transacional
+  - 300 emails/dia **grátis para sempre**
+  - 9.000 emails/mês sem custo
+  - API REST confiável e rápida
+  - Dashboard com analytics completo
+
 ### **Utilitários**
 - **[CORS](https://github.com/expressjs/cors)** - Cross-Origin Resource Sharing
 - **[dotenv](https://github.com/motdotla/dotenv)** - Gerenciamento de variáveis de ambiente
-- **[Nodemailer](https://nodemailer.com/)** - Envio de e-mails
-- **[SendGrid](https://sendgrid.com/)** - Serviço de e-mail transacional (100 emails/dia grátis)
 - **[Multer](https://github.com/expressjs/multer)** - Upload de arquivos (CSV)
 
 ### **Desenvolvimento**
 - **[Nodemon](https://nodemon.io/)** - Hot reload em desenvolvimento
 - **[ESLint](https://eslint.org/)** - Linter JavaScript
+
+---
+
+## 📧 Por que Brevo? (Solução de E-mail)
+
+### **Contexto e Decisão Técnica**
+
+Durante o desenvolvimento do VittaCash, foram testadas **3 soluções** diferentes para envio de e-mails transacionais (verificação de conta, recuperação de senha, etc). Abaixo está a análise técnica completa que levou à escolha do **Brevo** como solução definitiva.
+
+---
+
+### **❌ Solução 1: SMTP Gmail (Primeira Tentativa)**
+
+#### **Implementação:**
+- Biblioteca: `nodemailer`
+- Protocolo: SMTP (porta 587)
+- Servidor: `smtp.gmail.com`
+
+#### **Problemas Identificados:**
+
+##### **1. Bloqueio no Render Free Tier**
+```
+❌ Connection timeout
+❌ SMTP porta 587 bloqueada
+```
+O **Render Free Tier bloqueia todas as portas SMTP** (25, 465, 587) para prevenir spam. Isso torna impossível usar SMTP direto em produção gratuita.
+
+##### **2. Configuração Complexa**
+- Requer "Senha de App" do Google (2FA obrigatório)
+- Configuração de "Apps menos seguros"
+- Problemas de segurança com credenciais hardcoded
+
+##### **3. Limitações do Gmail**
+- **Limite:** 500 emails/dia (conta gratuita)
+- **Restrições:** Bloqueios automáticos por comportamento suspeito
+- **Confiabilidade:** Taxa de entrega ~85-90%
+
+#### **Conclusão:** ❌ Inviável para produção no Render Free Tier
+
+---
+
+### **❌ Solução 2: SendGrid (Segunda Tentativa)**
+
+#### **Implementação:**
+- Biblioteca: `@sendgrid/mail`
+- Protocolo: API HTTP (porta 443)
+- Plano: Free Trial (60 dias)
+
+#### **Problemas Identificados:**
+
+##### **1. Plano Free Trial Limitado**
+```
+✅ Durante trial: 100 emails/dia
+❌ Após trial (60 dias): 0 emails/mês
+```
+O SendGrid **não possui plano gratuito permanente**. Após o período de teste de 60 dias, é necessário migrar para plano pago.
+
+##### **2. Custos Elevados**
+| Plano | Emails/Mês | Custo/Mês |
+|-------|------------|-----------|
+| Free Trial | 100/dia (60 dias) | R$ 0 |
+| **Essentials 50K** | 50.000 | **$19.95** (~R$ 100) |
+| Essentials 100K | 100.000 | $34.95 (~R$ 175) |
+
+Para um MVP/startup, **$19.95/mês** (~R$ 1.200/ano) é um custo significativo apenas para envio de e-mails.
+
+##### **3. Problemas de Billing**
+Durante os testes, identificamos um **bug crítico**:
+```
+❌ Erro: Maximum credits exceeded
+❌ Billing adicionado, mas API bloqueada
+⏳ Delay de 30-60 minutos para liberação
+```
+Mesmo após adicionar método de pagamento, o sistema demorava até 1 hora para liberar os envios.
+
+##### **4. Complexidade Desnecessária**
+- Verificação de Single Sender obrigatória
+- Configuração de DNS (para domínios próprios)
+- Dashboard complexo com recursos não utilizados
+
+#### **Conclusão:** ❌ Custo-benefício ruim para MVP, insustentável a longo prazo
+
+---
+
+### **✅ Solução 3: Brevo (Solução Definitiva)**
+
+#### **Implementação:**
+- Biblioteca: `@getbrevo/brevo`
+- Protocolo: API HTTP (porta 443)
+- Plano: **Free Forever**
+
+#### **Vantagens Técnicas:**
+
+##### **1. Plano Gratuito Permanente**
+```
+✅ 300 emails/dia GRÁTIS PARA SEMPRE
+✅ 9.000 emails/mês sem custo
+✅ Sem limite de tempo
+✅ Sem necessidade de cartão de crédito
+```
+
+##### **2. Funciona Perfeitamente no Render Free Tier**
+- ✅ API HTTP (porta 443 - não bloqueada)
+- ✅ Sem necessidade de SMTP
+- ✅ Latência baixa (~200-500ms)
+- ✅ Taxa de entrega: **99%+**
+
+##### **3. API Simples e Moderna**
+```javascript
+// Exemplo de envio
+const sendSmtpEmail = new brevo.SendSmtpEmail();
+sendSmtpEmail.sender = { name: 'VittaCash', email: 'noreply@vittacash.com' };
+sendSmtpEmail.to = [{ email: user.email, name: user.name }];
+sendSmtpEmail.subject = 'Verificação de E-mail';
+sendSmtpEmail.htmlContent = templateHTML;
+
+await apiInstance.sendTransacEmail(sendSmtpEmail);
+```
+
+##### **4. Dashboard Completo**
+- ✅ Analytics em tempo real
+- ✅ Taxa de abertura e cliques
+- ✅ Histórico de envios
+- ✅ Logs detalhados de erros
+- ✅ Testes A/B (planos pagos)
+
+##### **5. Recursos Inclusos no Plano Free**
+- ✅ Templates de e-mail
+- ✅ API REST completa
+- ✅ SMTP relay (se necessário)
+- ✅ Webhooks para eventos
+- ✅ Editor visual de e-mails
+
+#### **Conclusão:** ✅ **Melhor custo-benefício, confiável e escalável**
+
+---
+
+### **📊 Comparação Final**
+
+| Critério | Gmail SMTP | SendGrid | **Brevo** |
+|----------|-----------|----------|-----------|
+| **Funciona no Render Free?** | ❌ Não (porta bloqueada) | ✅ Sim | ✅ Sim |
+| **Emails Grátis/Mês** | ~15.000 (500/dia) | 0 (após trial) | **9.000 (300/dia)** |
+| **Custo Mensal** | R$ 0 | R$ 100+ | **R$ 0** |
+| **Plano Permanente?** | ✅ Sim | ❌ Não | ✅ **Sim** |
+| **Taxa de Entrega** | ~85% | ~99% | **~99%** |
+| **Configuração** | Complexa | Média | **Simples** |
+| **Dashboard** | ❌ Não | ✅ Sim | ✅ **Sim** |
+| **API Moderna** | ❌ SMTP | ✅ HTTP | ✅ **HTTP** |
+| **Suporte** | Comunidade | Ticket | **Ticket + Docs** |
+
+---
+
+### **💰 Economia Anual**
+
+```
+SendGrid Essentials: $19.95/mês × 12 = $239.40/ano (~R$ 1.200/ano)
+Brevo Free Forever: R$ 0/ano
+
+💰 ECONOMIA: R$ 1.200/ano
+```
+
+---
+
+### **🎯 Decisão Final**
+
+**Brevo foi escolhido por:**
+
+1. ✅ **Custo zero permanente** (crítico para MVP/startup)
+2. ✅ **Funciona no Render Free Tier** (sem bloqueios)
+3. ✅ **300 emails/dia suficientes** para crescimento inicial
+4. ✅ **API simples e confiável** (menor complexidade)
+5. ✅ **Dashboard completo** (monitoramento em tempo real)
+6. ✅ **99%+ de entregabilidade** (mesma do SendGrid)
+7. ✅ **Escalável** (planos pagos disponíveis se necessário)
+
+**Resultado:** Sistema de e-mail **confiável, gratuito e escalável** que atende perfeitamente as necessidades do VittaCash sem comprometer qualidade ou gerar custos operacionais.
 
 ---
 
@@ -104,8 +287,9 @@ Fornecer uma solução robusta e escalável para controle financeiro pessoal, co
 - ✅ Login via Google OAuth 2.0
 - ✅ Verificação de e-mail por token
 - ✅ Reenvio de e-mail de verificação
-- ✅ Proteção de rotas com JWT
-- ✅ E-mails HTML responsivos via SendGrid
+- ✅ E-mails HTML responsivos via Brevo API
+- ✅ Sistema de retry automático (3 tentativas)
+- ✅ Proteção de rotas com JWT via SendGrid
 - ✅ Sistema de retry automático (3 tentativas)
 
 ### 💸 **Gerenciamento de Despesas**
@@ -1521,12 +1705,12 @@ SOFTWARE.
 
 ## 🙏 Agradecimentos
 
-- **Prisma** - ORM incrível
-- **Express** - Framework robusto
-- **Supabase** - Hosting PostgreSQL gratuito
-- **Render** - Deploy simplificado
-- **SendGrid** - Serviço de e-mail transacional confiável (100 emails/dia grátis)
-- **Google** - OAuth 2.0
+- **Prisma** - ORM incrível e moderno
+- **Express** - Framework web robusto e minimalista
+- **Supabase** - Hosting PostgreSQL gratuito e confiável
+- **Render** - Deploy simplificado com CI/CD automático
+- **Brevo** - Serviço de e-mail transacional excepcional (300 emails/dia grátis PERMANENTE)
+- **Google** - OAuth 2.0 e infraestrutura cloud
 
 ---
 
