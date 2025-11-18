@@ -44,9 +44,21 @@ class AuthService {
       },
     });
 
-    // Gerar token de verificação e enviar e-mail
+    // Gerar token de verificação e enviar e-mail de forma assíncrona
     const tokenVerificacao = await emailService.criarTokenVerificacao(usuario.email);
-    await emailService.enviarEmailVerificacao(usuario.email, usuario.name, tokenVerificacao);
+
+    // Enviar e-mail sem bloquear a resposta (fire and forget)
+    emailService.enviarEmailVerificacao(usuario.email, usuario.name, tokenVerificacao)
+      .then(resultado => {
+        if (resultado.sucesso) {
+          console.log(`✅ E-mail de verificação processado para ${usuario.email}`);
+        } else {
+          console.warn(`⚠️ E-mail de verificação falhou para ${usuario.email}:`, resultado.erro);
+        }
+      })
+      .catch(erro => {
+        console.error(`❌ Erro ao enviar e-mail de verificação para ${usuario.email}:`, erro.message);
+      });
 
     return {
       mensagem: 'Cadastro realizado com sucesso! Verifique seu e-mail para ativar sua conta.',
@@ -142,8 +154,11 @@ class AuthService {
           },
         });
 
-        // Enviar e-mail de boas-vindas
-        await emailService.enviarEmailBoasVindas(email, name);
+        // Enviar e-mail de boas-vindas de forma assíncrona (fire and forget)
+        emailService.enviarEmailBoasVindas(email, name)
+          .catch(erro => {
+            console.error(`❌ Erro ao enviar e-mail de boas-vindas para ${email}:`, erro.message);
+          });
       } else {
         // Atualizar informações se necessário
         if (!usuario.emailVerified && email_verified) {
