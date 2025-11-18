@@ -126,8 +126,21 @@ class EmailService {
   async enviarComRetry(sendSmtpEmail, tentativa = 1) {
     try {
       const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
+      const messageId = response.body?.messageId || response.messageId || 'N/A';
       console.log(`✅ E-mail enviado com sucesso via Brevo (tentativa ${tentativa})`);
-      console.log(`   Message ID: ${response.messageId}`);
+      console.log(`   Message ID: ${messageId}`);
+      console.log(`   Status: ${response.response?.statusCode || 'N/A'} ${response.response?.statusMessage || ''}`);
+      console.log(`   Para: ${sendSmtpEmail.to?.[0]?.email || 'N/A'}`);
+      console.log(`   De: ${sendSmtpEmail.sender?.email || 'N/A'}`);
+
+      // Aviso importante sobre verificação de sender
+      if (tentativa === 1) {
+        console.log(`\n⚠️  IMPORTANTE: Se o e-mail não chegar em 2-3 minutos:`);
+        console.log(`   1. Verifique se o sender está verificado: https://app.brevo.com/senders`);
+        console.log(`   2. Veja logs do envio: https://app.brevo.com/email/logs`);
+        console.log(`   3. Procure por Message ID: ${messageId}\n`);
+      }
+
       return true;
     } catch (erro) {
       console.error(`❌ Erro na tentativa ${tentativa}:`, erro.message);
