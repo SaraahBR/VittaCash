@@ -327,6 +327,58 @@ roteador.post('/import', upload.single('file'), expenseController.importar);
 
 /**
  * @swagger
+ * /api/expenses/send-report:
+ *   post:
+ *     summary: Enviar relatório de despesas por e-mail
+ *     tags: [Despesas]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: type
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [monthly, yearly]
+ *         description: Tipo de relatório (mensal ou anual)
+ *       - in: query
+ *         name: year
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Ano do relatório
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 12
+ *         description: Mês do relatório (obrigatório para relatório mensal)
+ *     responses:
+ *       200:
+ *         description: E-mail enviado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Relatório enviado por e-mail com sucesso
+ *                 email:
+ *                   type: string
+ *                   example: usuario@email.com
+ *       400:
+ *         description: Parâmetros inválidos
+ *       401:
+ *         description: Não autorizado
+ *       500:
+ *         description: Erro interno do servidor
+ */
+roteador.post('/send-report', expenseController.enviarEmailRelatorio);
+
+/**
+ * @swagger
  * /api/expenses/{id}:
  *   get:
  *     summary: Obter uma despesa específica

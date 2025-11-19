@@ -109,6 +109,29 @@ class ExpenseController {
       next(erro);
     }
   }
+
+  async enviarEmailRelatorio(req, res, next) {
+    try {
+      const { type, year, month } = req.query;
+
+      if (!type || !year) {
+        return res.status(400).json({ error: 'Parâmetros "type" e "year" obrigatórios' });
+      }
+
+      if (type === 'monthly' && !month) {
+        return res.status(400).json({ error: 'Parâmetro "month" obrigatório para relatório mensal' });
+      }
+
+      if (!['monthly', 'yearly'].includes(type)) {
+        return res.status(400).json({ error: 'Tipo inválido (use "monthly" ou "yearly")' });
+      }
+
+      const resultado = await expenseService.enviarEmailRelatorio(req.idUsuario, type, year, month);
+      res.json(resultado);
+    } catch (erro) {
+      next(erro);
+    }
+  }
 }
 
 export default new ExpenseController();

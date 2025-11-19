@@ -225,6 +225,12 @@ class AuthService {
     // Deletar token usado
     await emailService.deletarToken(email, token);
 
+    // Enviar e-mail de boas-vindas de forma assíncrona (fire and forget)
+    emailService.enviarEmailBoasVindas(email, usuario.name)
+      .catch(erro => {
+        console.error(`❌ Erro ao enviar e-mail de boas-vindas para ${email}:`, erro.message);
+      });
+
     // Gerar token JWT para login automático
     const tokenJWT = jwt.sign(
       { idUsuario: usuario.id, email: usuario.email },

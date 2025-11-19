@@ -3,6 +3,8 @@ import { CreateExpenseDTO } from '../dto/CreateExpenseDTO.js';
 import { UpdateExpenseDTO } from '../dto/UpdateExpenseDTO.js';
 import { ExpenseResponseDTO } from '../dto/ExpenseResponseDTO.js';
 import { ErroValidacao, ErroNaoEncontrado } from '../utils/erros.js';
+import emailService from './emailService.js';
+import prisma from '../config/bancoDados.js';
 
 class ExpenseService {
   async listarDespesas(idUsuario, filtros = {}) {
@@ -201,6 +203,41 @@ class ExpenseService {
       importadas: despesasImportadas.length,
       erros,
     };
+  }
+
+  async enviarEmailRelatorio(idUsuario, tipo, ano, mes) {
+    // Buscar dados do usuário
+    const usuario = await prisma.user.findUnique({
+      where: { id: idUsuario },
+    });
+
+    if (!usuario) {
+      throw new ErroNaoEncontrado('Usuário não encontrado');
+    }
+
+    // Gerar relatório
+    let relatorio;
+    if (tipo === 'monthly') {
+      relatorio = await this.relatorioMensal(idUsuario, ano, mes);
+    } else {
+      relatorio = await this.relatorioAnual(idUsuario, ano);
+    }
+
+    // Enviar email
+    const resultado = await emailService.enviarEmailRelatorioDespesas(
+      usuario.email,
+      usuario.name,
+      relatorio
+    );
+
+    if (resultado.sucesso) {
+      return {
+        message: 'Relatório enviado por e-mail com sucesso',
+        email: usuario.email
+      };
+    } else {
+      throw new Error('Falha ao enviar e-mail de relatório');
+    }
   }
 }
 
