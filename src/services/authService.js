@@ -126,15 +126,39 @@ class AuthService {
    * Login via Google OAuth
    */
   async loginGoogle(tokenGoogle) {
+    console.log('🔐 Iniciando login Google...');
+
     try {
-      // Verificar token do Google
-      const ticket = await clienteGoogle.verifyIdToken({
-        idToken: tokenGoogle,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
+      // Validação básica do token
+      if (!tokenGoogle || typeof tokenGoogle !== 'string') {
+        console.error('❌ Token inválido:', typeof tokenGoogle);
+        throw new ErroValidacao('Token do Google inválido ou ausente');
+      }
+
+      // Verificar se GOOGLE_CLIENT_ID está configurado
+      if (!process.env.GOOGLE_CLIENT_ID) {
+        console.error('❌ GOOGLE_CLIENT_ID não configurado no ambiente');
+        throw new Error('Configuração do Google OAuth incompleta');
+      }
+
+      console.log('🔍 Verificando token do Google...');
+      console.log('📝 Client ID:', process.env.GOOGLE_CLIENT_ID?.substring(0, 20) + '...');
+
+      // Verificar token do Google com timeout
+      const ticket = await Promise.race([
+        clienteGoogle.verifyIdToken({
+          idToken: tokenGoogle,
+          audience: process.env.GOOGLE_CLIENT_ID,
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout ao verificar token do Google')), 15000)
+        )
+      ]);
 
       const payload = ticket.getPayload();
       const { email, name, picture, email_verified } = payload;
+
+      console.log('✅ Token verificado para:', email);
 
       // Buscar ou criar usuário
       let usuario = await prisma.user.findUnique({
@@ -144,6 +168,7 @@ class AuthService {
       const ehNovoUsuario = !usuario;
 
       if (!usuario) {
+        console.log('👤 Criando novo usuário:', email);
         // Criar novo usuário via Google
         usuario = await prisma.user.create({
           data: {
@@ -156,10 +181,16 @@ class AuthService {
 
         // Enviar e-mail de boas-vindas de forma assíncrona (fire and forget)
         emailService.enviarEmailBoasVindas(email, name)
+          .then(resultado => {
+            if (resultado?.sucesso) {
+              console.log(`✅ E-mail de boas-vindas processado para ${email}`);
+            }
+          })
           .catch(erro => {
             console.error(`❌ Erro ao enviar e-mail de boas-vindas para ${email}:`, erro.message);
           });
       } else {
+        console.log('👤 Usuário existente:', email);
         // Atualizar informações se necessário
         if (!usuario.emailVerified && email_verified) {
           usuario = await prisma.user.update({
@@ -176,6 +207,8 @@ class AuthService {
         { expiresIn: '7d' }
       );
 
+      console.log('✅ Login Google concluído com sucesso');
+
       return {
         token,
         usuario: {
@@ -188,8 +221,21 @@ class AuthService {
         ehNovoUsuario,
       };
     } catch (erro) {
-      console.error('Erro no login Google:', erro);
-      throw new ErroNaoAutorizado('Token do Google inválido');
+      console.error('❌ Erro detalhado no login Google:');
+      console.error('   Tipo:', erro.constructor.name);
+      console.error('   Mensagem:', erro.message);
+      console.error('   Stack:', erro.stack);
+
+      // Retornar erro mais específico
+      if (erro.message?.includes('Timeout')) {
+        throw new ErroNaoAutorizado('Timeout ao verificar token do Google. Tente novamente.');
+      } else if (erro.message?.includes('Token used too late') || erro.message?.includes('expired')) {
+        throw new ErroNaoAutorizado('Token do Google expirado. Faça login novamente.');
+      } else if (erro.message?.includes('Invalid token signature')) {
+        throw new ErroNaoAutorizado('Assinatura do token inválida. Verifique sua configuração.');
+      } else {
+        throw new ErroNaoAutorizado('Token do Google inválido ou erro de conexão');
+      }
     }
   }
 

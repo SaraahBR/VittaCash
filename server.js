@@ -39,13 +39,49 @@ const corsOptions = {
             callback(new Error('Não permitido por CORS'));
         }
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Requested-With',
+        'Accept',
+        'Origin',
+        'Access-Control-Request-Method',
+        'Access-Control-Request-Headers'
+    ],
+    exposedHeaders: ['Authorization', 'Content-Type'],
     credentials: true,
-    optionsSuccessStatus: 200,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+    maxAge: 86400 // 24 horas de cache para preflight
 };
 
 app.use(cors(corsOptions));
+
+// Headers de segurança adicionais (mas flexíveis para Google Auth)
+app.use((req, res, next) => {
+    // Permitir iframes do Google (para OAuth popup)
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+
+    // Cross-Origin-Opener-Policy mais permissivo para Google Auth
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+
+    // Cross-Origin-Embedder-Policy
+    res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+
+    // Content Security Policy básico
+    res.setHeader(
+        'Content-Security-Policy',
+        "default-src 'self'; " +
+        "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com; " +
+        "style-src 'self' 'unsafe-inline'; " +
+        "img-src 'self' data: https:; " +
+        "frame-src 'self' https://accounts.google.com;"
+    );
+
+    next();
+});
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -72,6 +108,31 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         ambiente: process.env.NODE_ENV,
+        googleAuth: {
+            configurado: !!process.env.GOOGLE_CLIENT_ID,
+            clientIdPreview: process.env.GOOGLE_CLIENT_ID ?
+                process.env.GOOGLE_CLIENT_ID.substring(0, 20) + '...' :
+                'não configurado'
+        }
+    });
+});
+
+// Endpoint de teste para Google Auth
+app.get('/api/test/google-auth', (req, res) => {
+    res.json({
+        googleClientId: process.env.GOOGLE_CLIENT_ID ?
+            process.env.GOOGLE_CLIENT_ID.substring(0, 20) + '...' :
+            'não configurado',
+        jwtSecret: process.env.JWT_SECRET ? 'configurado' : 'não configurado',
+        cors: {
+            frontendUrl: process.env.FRONTEND_URL || 'não configurado',
+            allowedOrigins: [
+                'http://localhost:3000',
+                'https://vittacash.onrender.com',
+                'https://vittacash.vercel.app',
+                ...(process.env.FRONTEND_URL?.split(',').map(url => url.trim()) || [])
+            ]
+        }
     });
 });
 
