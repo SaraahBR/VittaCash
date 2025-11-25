@@ -122,6 +122,7 @@ class ExpenseService {
       quantidade: 0,
     }));
 
+    const porCategoria = {};
     let totalGeral = 0;
 
     despesas.forEach((despesa) => {
@@ -129,6 +130,13 @@ class ExpenseService {
       porMes[mesIndex].total += despesa.amount;
       porMes[mesIndex].quantidade += 1;
       totalGeral += despesa.amount;
+
+      const categoria = despesa.category;
+      if (!porCategoria[categoria]) {
+        porCategoria[categoria] = { categoria, total: 0, quantidade: 0 };
+      }
+      porCategoria[categoria].total += despesa.amount;
+      porCategoria[categoria].quantidade += 1;
     });
 
     return {
@@ -137,6 +145,13 @@ class ExpenseService {
       totalGeral,
       totalDespesas: despesas.length,
       porMes,
+      porCategoria: Object.values(porCategoria),
+      despesas: despesas.map(d => ({
+        nome: d.title,
+        valor: d.amount,
+        categoria: d.category,
+        data: d.date
+      }))
     };
   }
 

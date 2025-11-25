@@ -595,7 +595,7 @@ class EmailService {
             display: inline-block;
             padding: 18px 50px;
             background: linear-gradient(135deg, #FFD93D 0%, #6BCB77 50%, #4D96FF 100%);
-            color: #f5f5f0;
+            color: #f5f5f0 !important;
             text-decoration: none;
             border-radius: 50px;
             font-weight: 700;
@@ -1260,11 +1260,11 @@ class EmailService {
 
             ${despesaMaisCara ? `
             <div class="highlight-card">
-              <h3>💡 Categoria com Maior Gasto</h3>
+              <h3>💡 Despesa com Maior Valor</h3>
               <p>
-                <strong>${despesaMaisCara.categoria}</strong> foi sua categoria com maior gasto: 
-                <strong>R$ ${despesaMaisCara.total.toFixed(2)}</strong> 
-                (${((despesaMaisCara.total / relatorio.totalGeral) * 100).toFixed(1)}% do total)
+                <strong>${despesaMaisCara.nome || despesaMaisCara.categoria}</strong> foi sua ${despesaMaisCara.nome ? 'despesa' : 'categoria'} com maior gasto: 
+                <strong>R$ ${(despesaMaisCara.valor || despesaMaisCara.total).toFixed(2)}</strong> 
+                (${(((despesaMaisCara.valor || despesaMaisCara.total) / relatorio.totalGeral) * 100).toFixed(1)}% do total)
               </p>
             </div>
             ` : ''}
