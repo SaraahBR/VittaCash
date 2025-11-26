@@ -1280,12 +1280,18 @@ class EmailService {
               ${graficoPizza}
               
               <ul class="category-list">
-                ${relatorio.despesas && relatorio.despesas.length > 0 ? relatorio.despesas.map(desp => `
+                ${relatorio.despesas && relatorio.despesas.length > 0 ? relatorio.despesas.map(desp => {
+                  // Formatar data para mostrar dia/mês apenas para relatório anual
+                  const dataFormatada = relatorio.tipo === 'anual' && desp.data ? 
+                    `${String(new Date(desp.data).getDate()).padStart(2, '0')}/${String(new Date(desp.data).getMonth() + 1).padStart(2, '0')} ` : '';
+                  
+                  return `
                   <li class="category-item">
-                    <span class="category-name">${desp.nome}</span>
+                    <span class="category-name">${dataFormatada}${desp.nome}</span>
                     <span class="category-value">R$ ${desp.valor.toFixed(2)} (${((desp.valor / relatorio.totalGeral) * 100).toFixed(1)}%)</span>
                   </li>
-                `).join('') : relatorio.porCategoria.map(cat => `
+                `;
+                }).join('') : relatorio.porCategoria.map(cat => `
                   <li class="category-item">
                     <span class="category-name">${cat.categoria}</span>
                     <span class="category-value">R$ ${cat.total.toFixed(2)} (${((cat.total / relatorio.totalGeral) * 100).toFixed(1)}%)</span>
