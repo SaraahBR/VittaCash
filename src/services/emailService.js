@@ -1108,10 +1108,16 @@ class EmailService {
           .category-name {
             font-weight: 600;
             color: #2c3e50;
+            flex: 1;
+            text-align: left;
           }
           .category-value {
             font-weight: 700;
             color: #1a1a1a;
+            flex: 0 0 auto;
+            text-align: right;
+            white-space: nowrap;
+            margin-left: 20px;
           }
           .highlight-card {
             background: linear-gradient(135deg, #fff9e6 0%, #e8f8f0 50%, #e3f2fd 100%);
@@ -1277,12 +1283,12 @@ class EmailService {
                 ${relatorio.despesas && relatorio.despesas.length > 0 ? relatorio.despesas.map(desp => `
                   <li class="category-item">
                     <span class="category-name">${desp.nome}</span>
-                    <span class="category-value">&nbsp;&nbsp;R$ ${desp.valor.toFixed(2)} (${((desp.valor / relatorio.totalGeral) * 100).toFixed(1)}%)</span>
+                    <span class="category-value">R$ ${desp.valor.toFixed(2)} (${((desp.valor / relatorio.totalGeral) * 100).toFixed(1)}%)</span>
                   </li>
                 `).join('') : relatorio.porCategoria.map(cat => `
                   <li class="category-item">
                     <span class="category-name">${cat.categoria}</span>
-                    <span class="category-value">&nbsp;&nbsp;R$ ${cat.total.toFixed(2)} (${((cat.total / relatorio.totalGeral) * 100).toFixed(1)}%)</span>
+                    <span class="category-value">R$ ${cat.total.toFixed(2)} (${((cat.total / relatorio.totalGeral) * 100).toFixed(1)}%)</span>
                   </li>
                 `).join('')}
               </ul>
