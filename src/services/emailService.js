@@ -1270,11 +1270,16 @@ class EmailService {
             ` : ''}
 
             <div class="chart-section">
-              <div class="chart-title">📊 Distribuição por Categoria</div>
+              <div class="chart-title">📊 Distribuição por Despesas</div>
               ${graficoPizza}
               
               <ul class="category-list">
-                ${relatorio.porCategoria.map(cat => `
+                ${relatorio.despesas && relatorio.despesas.length > 0 ? relatorio.despesas.map(desp => `
+                  <li class="category-item">
+                    <span class="category-name">${desp.nome}</span>
+                    <span class="category-value">R$ ${desp.valor.toFixed(2)} (${((desp.valor / relatorio.totalGeral) * 100).toFixed(1)}%)</span>
+                  </li>
+                `).join('') : relatorio.porCategoria.map(cat => `
                   <li class="category-item">
                     <span class="category-name">${cat.categoria}</span>
                     <span class="category-value">R$ ${cat.total.toFixed(2)} (${((cat.total / relatorio.totalGeral) * 100).toFixed(1)}%)</span>

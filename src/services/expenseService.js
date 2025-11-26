@@ -105,6 +105,12 @@ class ExpenseService {
       totalGeral,
       totalDespesas: despesas.length,
       porCategoria: Object.values(porCategoria),
+      despesas: despesas.map(d => ({
+        nome: d.title,
+        valor: d.amount,
+        categoria: d.category,
+        data: d.date
+      }))
     };
   }
 
