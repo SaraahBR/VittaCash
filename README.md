@@ -39,7 +39,7 @@
 
 ## 📖 Sobre o Projeto
 
-**VittaCash** é uma API REST completa para gerenciamento de despesas pessoais, desenvolvida com Node.js e Express. O sistema oferece autenticação segura (tradicional e OAuth Google), CRUD completo de despesas, relatórios analíticos, importação/exportação de dados em CSV e verificação de e-mail.
+**VittaCash** é uma API REST completa para gerenciamento de despesas pessoais, desenvolvida com Node.js e Express. O sistema oferece autenticação segura (tradicional e OAuth Google), CRUD completo de despesas, relatórios analíticos e verificação de e-mail.
 
 ### 🎯 Objetivo
 
@@ -47,7 +47,6 @@ Fornecer uma solução robusta e escalável para controle financeiro pessoal, co
 - Segurança e privacidade dos dados
 - Facilidade de uso e integração
 - Relatórios e análises detalhadas
-- Importação/exportação de dados
 
 ### 🌟 Diferenciais
 
@@ -57,7 +56,6 @@ Fornecer uma solução robusta e escalável para controle financeiro pessoal, co
 - ✅ Arquitetura em camadas (MVC + Repository Pattern)
 - ✅ Documentação Swagger/OpenAPI integrada
 - ✅ Suporte a múltiplas origens CORS
-- ✅ Importação/exportação CSV
 - ✅ Relatórios mensais e anuais
 
 ---
@@ -94,7 +92,6 @@ Fornecer uma solução robusta e escalável para controle financeiro pessoal, co
 ### **Utilitários**
 - **[CORS](https://github.com/expressjs/cors)** - Cross-Origin Resource Sharing
 - **[dotenv](https://github.com/motdotla/dotenv)** - Gerenciamento de variáveis de ambiente
-- **[Multer](https://github.com/expressjs/multer)** - Upload de arquivos (CSV)
 
 ### **Desenvolvimento**
 - **[Nodemon](https://nodemon.io/)** - Hot reload em desenvolvimento
@@ -308,11 +305,6 @@ Brevo Free Forever: R$ 0/ano
 - ✅ Quantidade de despesas por período
 - ✅ Agregação de dados
 
-### 📁 **Importação/Exportação**
-- ✅ Exportar despesas para CSV
-- ✅ Importar despesas de CSV
-- ✅ Validação de formato
-- ✅ Tratamento de erros por linha
 
 ### 🛡️ **Segurança**
 - ✅ Senhas hashadas com bcrypt (salt 10)
@@ -915,68 +907,6 @@ Gera relatório mensal ou anual.
 
 ---
 
-### 📁 **Import/Export**
-
-#### **GET /api/expenses/export**
-Exporta despesas para CSV.
-
-**Query Params (opcionais):**
-- `month` - Mês (1-12)
-- `year` - Ano
-- `category` - Categoria
-
-**Exemplo:** `GET /api/expenses/export?month=11&year=2024`
-
-**Response:**
-- **Content-Type:** `text/csv`
-- **Content-Disposition:** `attachment; filename="despesas-2024-11.csv"`
-
-**Formato CSV:**
-```csv
-descricao,valor,categoria,data,recorrente
-Supermercado,150.50,Alimentação,2024-11-06,false
-Uber,25.00,Transporte,2024-11-07,false
-```
-
----
-
-#### **POST /api/expenses/import**
-Importa despesas de arquivo CSV.
-
-**Request:**
-- **Content-Type:** `multipart/form-data`
-- **Campo:** `file` (arquivo .csv)
-
-**Formato CSV esperado:**
-```csv
-descricao,valor,categoria,data,recorrente
-Supermercado,150.50,Alimentação,2024-11-06,false
-```
-
-**Response (200 OK):**
-```json
-{
-  "message": "2 despesas importadas com sucesso",
-  "importadas": 2,
-  "erros": []
-}
-```
-
-**Se houver erros:**
-```json
-{
-  "message": "1 despesa importada, 1 erro encontrado",
-  "importadas": 1,
-  "erros": [
-    {
-      "linha": 3,
-      "erro": "Valor inválido: -50.00"
-    }
-  ]
-}
-```
-
----
 
 ## 🛠️ Instalação
 
@@ -1280,16 +1210,6 @@ EMAIL_FROM="seuemail@gmail.com"
 - Calcula totais
 - Retorna: `{ tipo, ano, totalGeral, totalDespesas, porMes[] }`
 
-**`exportarCSV(idUsuario, filtros)`**
-- Lista despesas com filtros
-- Converte para formato CSV
-- Retorna string CSV
-
-**`importarCSV(idUsuario, conteudoCSV)`**
-- Valida formato CSV
-- Processa linha por linha
-- Trata erros individualmente
-- Retorna: `{ message, importadas, erros[] }`
 
 ---
 

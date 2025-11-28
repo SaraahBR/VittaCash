@@ -80,35 +80,6 @@ class ExpenseController {
     }
   }
 
-  async exportar(req, res, next) {
-    try {
-      const { month, year, category } = req.query;
-      const csv = await expenseService.exportarCSV(req.idUsuario, { month, year, category });
-
-      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="despesas-${year || 'todas'}-${month || 'todos'}.csv"`
-      );
-
-      res.send('\uFEFF' + csv);
-    } catch (erro) {
-      next(erro);
-    }
-  }
-
-  async importar(req, res, next) {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: 'Arquivo CSV não enviado' });
-      }
-
-      const resultado = await expenseService.importarCSV(req.idUsuario, req.file.buffer.toString('utf-8'));
-      res.json(resultado);
-    } catch (erro) {
-      next(erro);
-    }
-  }
 
   async enviarEmailRelatorio(req, res, next) {
     try {

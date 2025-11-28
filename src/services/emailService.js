@@ -754,10 +754,6 @@ class EmailService {
                 <strong>Relatórios Detalhados</strong>
                 <span>Acompanhe suas finanças através de gráficos mensais e anuais com análises completas.</span>
               </li>
-              <li class="feature-item">
-                <strong>Importação e Exportação</strong>
-                <span>Gerencie seus dados com facilidade através de arquivos CSV compatíveis.</span>
-              </li>
             </ul>
 
             <div class="cta-container">
