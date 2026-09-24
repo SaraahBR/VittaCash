@@ -39,3 +39,8 @@ build/
 # Documentação (temporária/local)
 documentacoes/
 
+
+# Arquivos locais do editor/assistente
+.claude/
+MEMORY.md
+memory.md
