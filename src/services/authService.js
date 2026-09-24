@@ -5,7 +5,7 @@ import prisma from '../config/bancoDados.js';
 import emailService from './emailService.js';
 import { CadastrarUsuarioDTO } from '../dto/CadastrarUsuarioDTO.js';
 import { LoginUsuarioDTO } from '../dto/LoginUsuarioDTO.js';
-import { ErroValidacao, ErroNaoAutorizado, ErroNaoEncontrado } from '../utils/erros.js';
+import { ErroValidacao, ErroNaoAutorizado, ErroNaoEncontrado, ErroServicoIndisponivel } from '../utils/erros.js';
 
 const clienteGoogle = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -225,6 +225,11 @@ class AuthService {
       console.error('   Tipo:', erro.constructor.name);
       console.error('   Mensagem:', erro.message);
       console.error('   Stack:', erro.stack);
+
+      // Falha de banco não é problema do token: não mascarar como 401
+      if (erro.constructor.name.startsWith('PrismaClient')) {
+        throw new ErroServicoIndisponivel('Não foi possível acessar o banco de dados. Tente novamente em instantes.');
+      }
 
       // Retornar erro mais específico
       if (erro.message?.includes('Timeout')) {

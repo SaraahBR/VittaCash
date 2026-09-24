@@ -35,6 +35,12 @@ export function tratadorErro(erro, req, res, next) {
     });
   }
 
+  if (erro.constructor?.name === 'PrismaClientInitializationError') {
+    return res.status(503).json({
+      error: 'Não foi possível acessar o banco de dados. Tente novamente em instantes.',
+    });
+  }
+
   res.status(500).json({
     error: 'Erro interno do servidor',
     message: process.env.NODE_ENV === 'development' ? erro.message : undefined,

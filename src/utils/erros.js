@@ -40,3 +40,9 @@ export class ErroConflito extends ErroApp {
   }
 }
 
+
+export class ErroServicoIndisponivel extends ErroApp {
+  constructor(mensagem = 'Serviço temporariamente indisponível') {
+    super(mensagem, 503);
+  }
+}
